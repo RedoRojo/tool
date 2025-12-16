@@ -20,12 +20,23 @@ public class AssertScanner {
     private static final String OUTPUT_FILE = "slicing_criteria.csv";
 
     public static void main(String[] args) {
-        File file = new File("/home/redo/Documents/tesis/Tool/src/test/java/com/DummyTest.java");
+        if (args.length == 0) {
+            System.err.println("Error: Debes proporcionar la ruta del archivo .java");
+            System.err.println("Uso: java -jar Tool.jar /ruta/a/TuTest.java");
+            System.exit(1);
+        }
+
+        File targetFile = new File(args[0]);
+
+        if (!targetFile.exists() || !targetFile.isFile()) {
+            System.err.println("Error: El archivo no existe o es un directorio -> " + targetFile.getAbsolutePath());
+            System.exit(1);
+        }
 
         try {
 
-            System.out.println("Analyzing: " + file.getAbsolutePath());
-            CompilationUnit ast = StaticJavaParser.parse(file);
+            System.out.println("Analyzing: " + targetFile.getAbsolutePath());
+            CompilationUnit ast = StaticJavaParser.parse(targetFile);
 
             AssertFinder finder = new AssertFinder();
 
@@ -33,15 +44,18 @@ public class AssertScanner {
 
             List<SlicingCriterion> criteria = finder.getCriteria();
 
-            System.out.println("Slicing criteria found: ");
-            for (SlicingCriterion c: criteria) {
-                System.out.println("Target: " + c);
+            if (criteria.isEmpty()) {
+                System.out.println("Aviso: No se encontraron asserts en este archivo.");
+            } else {
+                System.out.println("Se encontraron " + criteria.size() + " asserts.");
+                saveCriteriaToFile(criteria);
             }
 
             saveCriteriaToFile(criteria);
 
         } catch (Exception e) {
             System.err.println("Error processing file: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
