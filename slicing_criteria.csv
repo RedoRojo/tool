@@ -1,4 +1,4 @@
-ClassName,MethodName,LineNumber
-DummyTest,testSum,11
-DummyTest,testLogic,18
-DummyTest,testLogic,21
+Class Path,Test Class Name,Test Method Name,Test Assert Line
+com.DummyTest,DummyTest,testSum,13
+com.DummyTest,DummyTest,testLogic,20
+com.DummyTest,DummyTest,testLogic,23

@@ -1,5 +1,6 @@
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -19,7 +20,7 @@ public class AssertScanner {
     private static final String OUTPUT_FILE = "slicing_criteria.csv";
 
     public static void main(String[] args) {
-        File file = new File("/home/redo/Documents/tesis/Tool/src/test/java/DummyTest.java");
+        File file = new File("/home/redo/Documents/tesis/Tool/src/test/java/com/DummyTest.java");
 
         try {
 
@@ -46,11 +47,10 @@ public class AssertScanner {
 
     private static void saveCriteriaToFile(List<SlicingCriterion> criteria) {
         try (FileWriter writer = new FileWriter(OUTPUT_FILE)) {
-            writer.write("ClassName,MethodName,LineNumber\n");
+            writer.write("Class Path,Test Class Name,Test Method Name,Test Assert Line\n");
 
             for (SlicingCriterion c: criteria) {
-                String line = c.getClassName() + "," + c.getMethodName() + "," + c.getLineNumber() + "\n";
-                writer.write(line);
+                writer.write(c.toCSV() + "\n");
             }
 
             System.out.println("Success! Plan saved to: " + OUTPUT_FILE);
@@ -73,7 +73,7 @@ public class AssertScanner {
             super.visit(methodCall, arg);
 
             if(methodCall.getNameAsString().startsWith("assert")) {
-                addCriterion(methodCall, methodCall.getBegin().get().line);
+                extractInfo(methodCall, methodCall.getBegin().get().line);
             }
         }
 
@@ -82,18 +82,27 @@ public class AssertScanner {
             super.visit(assertStmt, arg);
 
             int line = assertStmt.getBegin().get().line;
-            addCriterion(assertStmt, line);
+            extractInfo(assertStmt, line);
         }
 
-        private void addCriterion(Node node, int line) {
+        private void extractInfo(Node node, int line) {
             Optional<MethodDeclaration> parentMethod = node.findAncestor(MethodDeclaration.class);
             Optional<ClassOrInterfaceDeclaration> parentClass = node.findAncestor(ClassOrInterfaceDeclaration.class);
+            Optional<CompilationUnit> cu = node.findAncestor(CompilationUnit.class);
 
-            if (parentMethod.isPresent() && parentClass.isPresent()) {
+
+            if (parentMethod.isPresent() && parentClass.isPresent() && cu.isPresent()) {
                 String methodName = parentMethod.get().getNameAsString();
-                String className = parentClass.get().getNameAsString();
+                String simpleClassName = parentClass.get().getNameAsString();
+                String packageName = cu.get().getPackageDeclaration().map(PackageDeclaration::getNameAsString).orElse("");
 
-                criteria.add(new SlicingCriterion(className, methodName, line));
+                String fullPath;
+                if (packageName.isEmpty()) {
+                    fullPath = simpleClassName;
+                } else {
+                    fullPath = packageName + "." + simpleClassName;
+                }
+                criteria.add(new SlicingCriterion(fullPath, simpleClassName, methodName, line));
             }
         }
     }

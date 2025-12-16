@@ -1,12 +1,18 @@
 public class SlicingCriterion {
-    private String className;
-    private String methodName;
-    private Integer lineNumber;
+    private final String fullClassPath;
+    private final String simpleClassName;
+    private final String methodName;
+    private final Integer lineNumber;
 
-    public SlicingCriterion(String className, String methodName, Integer lineNumber) {
-        this.className = className;
+    public SlicingCriterion(String fullClassPath, String className, String methodName, Integer lineNumber) {
+        this.fullClassPath = fullClassPath;
+        this.simpleClassName = className;
         this.methodName = methodName;
         this.lineNumber = lineNumber;
+    }
+
+    public String getFullClassPath() {
+        return fullClassPath;
     }
 
     public Integer getLineNumber() {
@@ -17,12 +23,16 @@ public class SlicingCriterion {
         return methodName;
     }
 
-    public String getClassName() {
-        return className;
+    public String getSimpleClassName() {
+        return simpleClassName;
     }
 
     @Override
     public String toString() {
-        return className + "." + methodName + ":" + lineNumber;
+        return fullClassPath + "." + methodName + ":" + lineNumber;
+    }
+
+    public String toCSV() {
+        return fullClassPath + "," + simpleClassName + ","  + methodName + "," + lineNumber;
     }
 }
