@@ -5,7 +5,8 @@ import com.github.javaparser.ast.stmt.AssertStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import java.io.File;
-import java.
+import java.util.ArrayList;
+import java.util.List;
 
 public class AssertScanner {
 
@@ -15,8 +16,15 @@ public class AssertScanner {
         try {
             CompilationUnit ast = StaticJavaParser.parse(file);
 
-            System.out.println("Scanning file: " + file.getName());
-            ast.accept(new AssertFinder(), null);
+            AssertFinder finder = new AssertFinder();
+
+            ast.accept(finder, null);
+
+            List<Integer> linesFound = finder.getAssertLines();
+
+            System.out.println("Analysis finished.");
+            System.out.println("Total assertions found: " + linesFound.size());
+            System.out.println("Lines to Slice: " + linesFound);
 
         } catch (Exception e) {
             System.err.println("Error processing file: " + e.getMessage());
@@ -24,6 +32,12 @@ public class AssertScanner {
     }
 
     private static class AssertFinder extends VoidVisitorAdapter<Void> {
+
+        private final List<Integer> assertLines = new ArrayList<>();
+
+        public List<Integer> getAssertLines() {
+            return assertLines;
+        }
 
         @Override
         public void visit (MethodCallExpr methodCall, Void arg) {
@@ -33,7 +47,7 @@ public class AssertScanner {
 
             if (methodName.startsWith("assert")) {
                 int line = methodCall.getBegin().get().line;
-                System.out.println("[JUnit Assert] found in line " + line + ": " + methodCall);
+                assertLines.add(line);
             }
         }
 
@@ -42,7 +56,7 @@ public class AssertScanner {
             super.visit(assertStmt, arg);
 
             int line = assertStmt.getBegin().get().line;
-            System.out.println("[Java Native Assert] found in line " + line + ": " + assertStmt);
+            assertLines.add(line);
         }
     }
 }
