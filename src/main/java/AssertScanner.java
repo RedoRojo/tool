@@ -11,13 +11,12 @@ import com.github.javaparser.ast.Node;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class AssertScanner {
-
-    private static final String OUTPUT_FILE = "slicing_criteria.csv";
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -37,9 +36,7 @@ public class AssertScanner {
 
             System.out.println("Analyzing: " + targetFile.getAbsolutePath());
             CompilationUnit ast = StaticJavaParser.parse(targetFile);
-
             AssertFinder finder = new AssertFinder();
-
             ast.accept(finder, null);
 
             List<SlicingCriterion> criteria = finder.getCriteria();
@@ -48,10 +45,15 @@ public class AssertScanner {
                 System.out.println("Aviso: No se encontraron asserts en este archivo.");
             } else {
                 System.out.println("Se encontraron " + criteria.size() + " asserts.");
-                saveCriteriaToFile(criteria);
-            }
 
-            saveCriteriaToFile(criteria);
+                String inputName = targetFile.getName();
+                String baseName = inputName.contains(".") ? inputName.substring(0, inputName.lastIndexOf('.')) : inputName;
+                String outputFileName = baseName + "_criteria.csv";
+
+                String currentDir = System.getProperty("user.dir");
+                File outputFile = Paths.get(currentDir, outputFileName).toFile();
+                saveCriteriaToFile(criteria, outputFile);
+            }
 
         } catch (Exception e) {
             System.err.println("Error processing file: " + e.getMessage());
@@ -59,16 +61,16 @@ public class AssertScanner {
         }
     }
 
-    private static void saveCriteriaToFile(List<SlicingCriterion> criteria) {
-        try (FileWriter writer = new FileWriter(OUTPUT_FILE)) {
+    private static void saveCriteriaToFile(List<SlicingCriterion> criteria, File outputFile) {
+        try (FileWriter writer = new FileWriter(outputFile)) {
             writer.write("Class Path,Test Class Name,Test Method Name,Test Assert Line\n");
 
             for (SlicingCriterion c: criteria) {
                 writer.write(c.toCSV() + "\n");
             }
 
-            System.out.println("Success! Plan saved to: " + OUTPUT_FILE);
-            System.out.println("Total criteria found: " + criteria.size());
+            System.out.println(" [SUCCESS] Plan saved to: " );
+            System.out.println(" -> " + outputFile.getAbsolutePath());
         } catch (IOException e) {
             System.out.println("Error writing output file: " + e.getMessage());
         }
